@@ -13,10 +13,10 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
         python-dev \
         git-core && \
     apt-get autoremove --purge -y && \
-    apt-get clean && \
-    rm -rf /var/cache/apt /var/lib/apt/lists
-RUN python -c 'import urllib2;exec(urllib2.urlopen("https://bootstrap.pypa.io/get-pip.py").read())' --no-cache-dir --timeout 1000 && \
-    pip install --no-cache-dir --timeout 1000 -r "https://raw.githubusercontent.com/douban/tfmesos/master/requirements.txt"
-ADD tfmesos /tfmesos
+    apt-get clean
+RUN apt-get install nvidia-modprobe
+RUN python -c 'import urllib2;exec(urllib2.urlopen("https://bootstrap.pypa.io/get-pip.py").read())' --no-cache-dir --timeout 1000
+ADD . /tfmesos
+RUN pip install -r /tfmesos/requirements_v.txt
 RUN pip install /tfmesos/.
 ENV DOCKER_IMAGE tfmesos/tfmesos

@@ -143,7 +143,8 @@ def main(unused_argv):
     y = tf.nn.softmax(tf.nn.xw_plus_b(hid, sm_w, sm_b))
     cross_entropy = -tf.reduce_sum(y_ *
                                    tf.log(tf.clip_by_value(y, 1e-10, 1.0)))
-
+    correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     opt = tf.train.AdamOptimizer(FLAGS.learning_rate)
     if FLAGS.sync_replicas:
       opt = tf.train.SyncReplicasOptimizer(
@@ -227,6 +228,8 @@ def main(unused_argv):
             print("After %d training step(s), validation cross entropy = %g" %
                   (FLAGS.train_steps, val_xent))
 
-
+            test_acc = sess.run(accuracy, feed_dict={x: mnist.test.images, y_: mnist.test.labels})
+	    print("Test Accuracy after %d trainning steps, %g" %
+		  (FLAGS.train_steps, test_acc))
 if __name__ == "__main__":
   tf.app.run()
