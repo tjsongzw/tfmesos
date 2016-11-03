@@ -146,3 +146,21 @@ nvidia-docker run --rm -it -e MESOS_MASTER=master.mesos:5050 \
 
 Nov  2 23:13:01 ip-172-31-14-41 docker: time="2016-11-02T23:13:01.222179642-04:00" level=error msg="Handler for GET /v1.23/containers/tfmesos/tfmesos:gpu/json returned error: No such container: tfmesos/tfmesos:gpu"
 Nov  2 23:13:02 ip-172-31-14-41 minuteman-env: 23:13:02.532 [error] Failed to parse task: {function_clause,[{mesos_state_client,docker,[#{image => <<"tfmesos/tfmesos:gpu">>,network => <<"HOST">>,privileged => false}],[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,304}]},{mesos_state_client,container,1,[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,295}]},{mesos_state_client,task,3,[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,232}]},{mesos_state_client,tasks,5,[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,211}]},{mesos_state_client,executors,5,[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,191}]},{mesos_state_client,frameworks,4,[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,181}]},{mesos_state_client,tasks,1,[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,169}]},{minuteman_mesos_poller,collect_vips,2,[{file,"/pkg/src/minuteman/_build/prod/lib/minuteman/src/minuteman_mesos_poller.erl"},{line,323}]}]}
+
+
+
+
+apt-get update && apt-get install -y --no-install-recommends \
+               cuda-samples-$CUDA_PKG_VERSION && \
+               rm -rf /var/lib/apt/lists/*
+
+cd /usr/local/cuda/samples/0_Simple/matrixMul
+make
+./matrixMul
+```
+[Matrix Multiply Using CUDA] - Starting...
+cudaGetDevice returned error CUDA driver version is insufficient for CUDA runtime version (code 35), line(396)
+cudaGetDeviceProperties returned error CUDA driver version is insufficient for CUDA runtime version (code 35), line(409)
+MatrixA(320,320), MatrixB(640,320)
+cudaMalloc d_A returned error CUDA driver version is insufficient for CUDA runtime version (code 35), line(164)
+```
