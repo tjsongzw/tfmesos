@@ -97,6 +97,10 @@ class Task(object):
                 v.mode = 'RW'
 
             if self.gpus and gpu_uuids and gpu_resource_type is not None:
+                print "----- gpu settings -----"
+                print self.gpus
+                print gpu_uuids
+                print gpu_resource_type
                 if gpu_resource_type == 'SET':
                     hostname = offer.hostname
                     url = 'http://%s:3476/docker/cli?dev=%s' % (
@@ -128,11 +132,33 @@ class Task(object):
                             ' disable gpu resources'
                         )
                 else:
-                    gpus = Dict()
-                    resources.append(gpus)
-                    gpus.name = 'gpus'
-                    gpus.type = 'SCALAR'
-                    gpus.scalar.value = len(gpu_uuids)
+                    hostname = offer.hostname
+                    url = 'http://%s:3476/docker/cli?dev=0' % (
+                        hostname
+                    )
+		    print url
+
+                    try:
+                        ti.container.docker.parameters = parameters = []
+                        docker_args = urllib.request.urlopen(url).read()
+                        for arg in docker_args.split():
+                            k, v = arg.split('=')
+                            assert k.startswith('--')
+                            k = k[2:]
+                            p = Dict()
+                            parameters.append(p)
+                            p.key = k
+                            p.value = v
+                        gpus = Dict()
+                        resources.append(gpus)
+                        gpus.name = 'gpus'
+                        gpus.type = 'SCALAR'
+                        gpus.scalar.value = len(gpu_uuids)
+                    except Exception:
+                        logger.exception(
+                            'fail to determine remote device parameter,'
+                            ' disable gpu resources'
+                        )
 
         else:
             if self.gpus and gpu_uuids and gpu_resource_type is not None:

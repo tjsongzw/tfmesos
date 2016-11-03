@@ -15,6 +15,15 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     apt-get autoremove --purge -y && \
     apt-get clean
 RUN apt-get install nvidia-modprobe
+# add libcuda sos
+ADD usr/lib/libcuda.so /usr/local/nvidia/lib/libcuda.so
+ADD usr/lib/libcuda.so.1 /usr/local/nvidia/lib/libcuda.so.1
+ADD usr/lib/libcuda.so.361.42 /usr/local/nvidia/lib/libcuda.so.361.42
+ADD usr/lib64/libcuda.so /usr/local/nvidia/lib64/libcuda.so
+ADD usr/lib64/libcuda.so.1 /usr/local/nvidia/lib64/libcuda.so.1
+ADD usr/lib64/libcuda.so.361.42 /usr/local/nvidia/lib64/libcuda.so.361.42
+
+
 RUN python -c 'import urllib2;exec(urllib2.urlopen("https://bootstrap.pypa.io/get-pip.py").read())' --no-cache-dir --timeout 1000
 ADD . /tfmesos
 RUN pip install -r /tfmesos/requirements_gpu.txt
