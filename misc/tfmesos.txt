@@ -129,7 +129,7 @@ docker run --rm -it -e MESOS_MASTER=master.mesos:5050 \
             -u `id -u` \
             -w /mnist \
             tfmesos/tfmesos:gpu \
-            python mnist.py -w 2 -s 2
+            python mnist.py -w 2 -s 1
 
 
 

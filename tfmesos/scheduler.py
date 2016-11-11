@@ -12,15 +12,19 @@ from six.moves import urllib
 from pymesos import Scheduler, MesosSchedulerDriver
 from tfmesos.utils import send, recv, setup_logger
 
-
 FOREVER = 0xFFFFFFFF
 logger = logging.getLogger(__name__)
 
 
 class Job(object):
-
-    def __init__(self, name, num, cpus=1.0, mem=1024.0,
-                 gpus=0, cmd=None, start=0):
+    def __init__(self,
+                 name,
+                 num,
+                 cpus=1.0,
+                 mem=1024.0,
+                 gpus=0,
+                 cmd=None,
+                 start=0):
         self.name = name
         self.num = num
         self.cpus = cpus
@@ -31,9 +35,15 @@ class Job(object):
 
 
 class Task(object):
-
-    def __init__(self, mesos_task_id, job_name, task_index,
-                 cpus=1.0, mem=1024.0, gpus=0, cmd=None, volumes={}):
+    def __init__(self,
+                 mesos_task_id,
+                 job_name,
+                 task_index,
+                 cpus=1.0,
+                 mem=1024.0,
+                 gpus=0,
+                 cmd=None,
+                 volumes={}):
         self.mesos_task_id = mesos_task_id
         self.job_name = job_name
         self.task_index = task_index
@@ -56,7 +66,10 @@ class Task(object):
           addr=%s
         >''' % (self.mesos_task_id, self.addr))
 
-    def to_task_info(self, offer, master_addr, gpu_uuids=[],
+    def to_task_info(self,
+                     offer,
+                     master_addr,
+                     gpu_uuids=[],
                      gpu_resource_type=None):
         ti = Dict()
         ti.task_id.value = str(self.mesos_task_id)
@@ -110,10 +123,7 @@ class Task(object):
 
                 hostname = offer.hostname
                 url = 'http://%s:3476/docker/cli?dev=%s' % (
-                    hostname, urllib.parse.quote(
-                        ' '.join(gpu_uuids)
-                    )
-                )
+                    hostname, urllib.parse.quote(' '.join(gpu_uuids)))
                 try:
                     ti.container.docker.parameters = parameters = []
                     docker_args = urllib.request.urlopen(url).read()
@@ -128,16 +138,15 @@ class Task(object):
                 except Exception:
                     logger.exception(
                         'fail to determine remote device parameter,'
-                        ' disable gpu resources'
-                    )
-                logger.info(textwrap.dedent(
-                    """
+                        ' disable gpu resources')
+                logger.info(
+                    textwrap.dedent("""
                     {}
                     got gpu resources!
                     {}
                     url
                     {}
-                    """.format('*'*27, '*'*27, url)))
+                    """.format('*' * 27, '*' * 27, url)))
 
         else:
             if self.gpus and gpu_uuids and gpu_resource_type is not None:
@@ -169,9 +178,13 @@ class Task(object):
 
 
 class TFMesosScheduler(Scheduler):
-
-    def __init__(self, task_spec, master=None, name=None, quiet=False,
-                 volumes={}, local_task=None):
+    def __init__(self,
+                 task_spec,
+                 master=None,
+                 name=None,
+                 quiet=False,
+                 volumes={},
+                 local_task=None):
         self.started = False
         self.master = master or os.environ['MESOS_MASTER']
         self.name = name or '[tensorflow] %s %s' % (
@@ -191,9 +204,7 @@ class TFMesosScheduler(Scheduler):
                         mem=job.mem,
                         gpus=job.gpus,
                         cmd=job.cmd,
-                        volumes=volumes
-                    )
-                )
+                        volumes=volumes))
         if not quiet:
             global logger
             setup_logger(logger)
@@ -225,27 +236,29 @@ class TFMesosScheduler(Scheduler):
                     if resource.type == 'SET':
                         offered_gpus = resource.set.item
                     else:
-                        offered_gpus = list(range(int(resource.scalar.value))
-                    gpu_resource_type = resource.type
-                    logger.info('gpu_resource_type: {}'.gpu_resource_type)
+                        offered_gpus = list(range(int(resource.scalar.value)))
+                gpu_resource_type = resource.type
+                logger.info('gpu_resource_type: {}'.format(gpu_resource_type))
 
             for task in self.tasks:
                 if task.offered:
                     continue
 
-                if not (task.cpus <= offered_cpus and
-                        task.mem <= offered_mem and
-                        task.gpus <= len(offered_gpus)):
+                if not (task.cpus <= offered_cpus and task.mem <= offered_mem
+                        and task.gpus <= len(offered_gpus)):
                     logger.warn('offer id: {}'.format(offer.id))
                     if not task.cpus <= offered_cpus:
-                        logger.warn('offered cpus: {}, required cpus: {} for task {}'.format(
-                            offered_cpus, task.cpus, task))
+                        logger.warn(
+                            'offered cpus: {}, required cpus: {} for task {}'.
+                            format(offered_cpus, task.cpus, task))
                     if not task.mem <= offered_mem:
-                        logger.warn('offered mem: {}, required mem: {} for task {}'.format(
-                            offered_mem, task.mem, task))
+                        logger.warn(
+                            'offered mem: {}, required mem: {} for task {}'.
+                            format(offered_mem, task.mem, task))
                     if not task.gpus <= len(offered_gpus):
-                        logger.warn('offered gpus: {}, required gpus: {} for task {}'.format(
-                            offered_gpus, task.gpus, task))
+                        logger.warn(
+                            'offered gpus: {}, required gpus: {} for task {}'.
+                            format(offered_gpus, task.gpus, task))
                     continue
 
                 offered_cpus -= task.cpus
@@ -256,10 +269,10 @@ class TFMesosScheduler(Scheduler):
                 task.offered = True
                 offered_tasks.append(
                     task.to_task_info(
-                        offer, self.addr, gpu_uuids=gpu_uuids,
-                        gpu_resource_type=gpu_resource_type
-                    )
-                )
+                        offer,
+                        self.addr,
+                        gpu_uuids=gpu_uuids,
+                        gpu_resource_type=gpu_resource_type))
 
             driver.launchTasks(offer.id, offered_tasks)
 
@@ -290,17 +303,12 @@ class TFMesosScheduler(Scheduler):
             }
             send(task.connection, response)
             assert recv(task.connection) == 'ok'
-            logger.info(
-                'Device /job:%s/task:%s activated @ grpc://%s ',
-                task.job_name,
-                task.task_index,
-                task.addr
-            )
+            logger.info('Device /job:%s/task:%s activated @ grpc://%s ',
+                        task.job_name, task.task_index, task.addr)
             task.connection.close()
         return targets
 
     def start(self):
-
         def readable(fd):
             return bool(select.select([fd], [], [], 0.1)[0])
 
@@ -315,8 +323,7 @@ class TFMesosScheduler(Scheduler):
             framework.hostname = socket.gethostname()
 
             self.driver = MesosSchedulerDriver(
-                self, framework, self.master, use_addict=True
-            )
+                self, framework, self.master, use_addict=True)
             self.driver.start()
             while any((not task.initalized for task in self.tasks)):
                 if readable(lfd):
@@ -340,11 +347,9 @@ class TFMesosScheduler(Scheduler):
             lfd.close()
 
     def registered(self, driver, framework_id, master_info):
-        logger.info(
-            'Tensorflow cluster registered. '
-            '( http://%s:%s/#/frameworks/%s )',
-            master_info.hostname, master_info.port, framework_id.value
-        )
+        logger.info('Tensorflow cluster registered. '
+                    '( http://%s:%s/#/frameworks/%s )', master_info.hostname,
+                    master_info.port, framework_id.value)
 
     def statusUpdate(self, driver, update):
         mesos_task_id = int(update.task_id.value)
@@ -353,9 +358,8 @@ class TFMesosScheduler(Scheduler):
             if self.started:
                 if update.state != 'TASK_FINISHED':
                     logger.error('Task failed: %s, %s', task, update.message)
-                    raise RuntimeError(
-                        'Task %s failed! %s' % (id, update.message)
-                    )
+                    raise RuntimeError('Task %s failed! %s' %
+                                       (id, update.message))
             else:
                 logger.warn('Task failed: %s, %s', task, update.message)
                 if task.connection:
