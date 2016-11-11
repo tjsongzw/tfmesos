@@ -1,0 +1,166 @@
+nvidia-docker run --rm -it -e MESOS_MASTER=172.32.12.249:5050 \
+             --net=host \
+             -v /home/ubuntu/tfmesos/examples/mnist:/mnist \
+             -v /etc/passwd:/etc/passwd:ro \
+             -v /etc/group:/etc/group:ro \
+             -u `id -u` \
+             -w /mnist \
+             tfmesos/tfmesos:v1 \
+             tfrun -w 1 -s 1 -Gw 1 -- python mnist_replica.py \
+             --ps_hosts {ps_hosts} --worker_hosts {worker_hosts} \
+             --job_name {job_name} --worker_index {task_index}
+
+
+nvidia-docker run --rm -it -e MESOS_MASTER=172.32.12.249:5050 --net=host tfmesos/tfmesos:v1 nvidia-smi
+
+
+docker run  -it -e MESOS_MASTER=172.31.12.249:5050 \
+             --net=host \
+             -v /root/tfmesos/examples/mnist:/mnist \
+             -v /etc/passwd:/etc/passwd:ro \
+             -v /etc/group:/etc/group:ro \
+             -u `id -u` \
+             -w /mnist \
+             tfmesos/tfmesos:gpu \
+             tfrun -w 1 -s 1 -v\
+             -V /mnist:/mnist \
+             -- python mnist_replica.py \
+             --ps_hosts {ps_hosts} --worker_hosts {worker_hosts} \
+             --job_name {job_name} --worker_index {task_index}
+
+
+
+No handlers could be found for logger "pymesos.process"
+Traceback (most recent call last):
+  File "/usr/local/bin/tfrun", line 73, in <module>
+    volumes=volumes, local_task=(worker_name, addr)) as targets:
+  File "/usr/lib/python2.7/contextlib.py", line 17, in __enter__
+    return self.gen.next()
+  File "/usr/local/lib/python2.7/dist-packages/tfmesos/__init__.py", line 20, in cluster
+    yield s.start()
+  File "/usr/local/lib/python2.7/dist-packages/tfmesos/scheduler.py", line 306, in start
+    if readable(lfd):
+  File "/usr/local/lib/python2.7/dist-packages/tfmesos/scheduler.py", line 289, in readable
+    return bool(select.select([fd], [], [], 0.1)[0])
+  File "/usr/local/lib/python2.7/dist-packages/pymesos/process.py", line 23, in _handle_sigint
+    reraise(*exc_info)
+  File "/usr/local/lib/python2.7/dist-packages/pymesos/process.py", line 287, in _run
+    if not conn.read():
+  File "/usr/local/lib/python2.7/dist-packages/pymesos/process.py", line 129, in read
+    self._callback.process_event(event)
+  File "/usr/local/lib/python2.7/dist-packages/pymesos/process.py", line 208, in process_event
+    self.on_event(event)
+  File "/usr/local/lib/python2.7/dist-packages/pymesos/scheduler.py", line 442, in on_event
+    func(event)
+  File "/usr/local/lib/python2.7/dist-packages/pymesos/scheduler.py", line 392, in on_offers
+    self, [self._dict_cls(offer) for offer in offers]
+  File "/usr/local/lib/python2.7/dist-packages/tfmesos/scheduler.py", line 220, in resourceOffers
+    offered_gpus = list(range(resource.scalar.value))
+TypeError: range() integer end argument expected, got float.
+
+
+cpu:
+No handlers could be found for logger "tfmesos.scheduler"
+
+
+
+
+docker -H unix:///var/run/docker.sock run --cpu-shares 1024 --memory 1073741824 -e PYTHONPATH=/usr/local/bin:/usr/lib/python2.7:/usr/lib/python2.7/plat-x86_64-linux-gnu:/usr/lib/python2.7/lib-tk:/usr/lib/python2.7/lib-old:/usr/lib/python2.7/lib-dynload:/usr/local/lib/python2.7/dist-packages:/usr/lib/python2.7/dist-packages -e LIBPROCESS_IP=172.31.6.166 -e MESOS_SANDBOX=/mnt/mesos/sandbox -e MESOS_CONTAINER_NAME=mesos-4e5d3249-1ba4-4e8f-b7e8-43653ea604cf-S3.0346a481-ba01-4e14-9361-38b11b80650e -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v /mnist:/mnist:rw -v /var/lib/mesos/slave/slaves/4e5d3249-1ba4-4e8f-b7e8-43653ea604cf-S3/frameworks/4e5d3249-1ba4-4e8f-b7e8-43653ea604cf-0009/executors/0/runs/0346a481-ba01-4e14-9361-38b11b80650e:/mnt/mesos/sandbox --net host --entrypoint /bin/sh --name mesos-4e5d3249-1ba4-4e8f-b7e8-43653ea604cf-S3.0346a481-ba01-4e14-9361-38b11b80650e tfmesos/tfmesos -c /usr/bin/python -m tfmesos.server 0 ip-172-31-6-166.ap-northeast-1.compute.internal:41356
+
+
+
+sudo docker run -e MESOS_MASTER=master.mesos:5050 \
+            --net=host \
+            -e DOCKER_IMAGE=tfmesos/tfmesos:v1 \
+            -v /home/ec2-user/tfmesos/examples/mnist:/mnist \
+            -v /etc/passwd:/etc/passwd:ro \
+            -v /etc/group:/etc/group:ro \
+            -u `id -u` \
+            -w /mnist \
+            tfmesos/tfmesos:v1 \
+            tfrun -w 2 -s 2 -v\
+            -V /dev:/dev \
+            -V /home/ec2-user/tfmesos/examples/mnist:/mnist \
+            -V /usr/lib/libcuda.so:/usr/local/nvidia/lib/libcuda.so \
+            -V /usr/lib/libcuda.so.1:/usr/local/nvidia/lib/libcuda.so.1 \
+            -V /usr/lib/libcuda.so.361.42:/usr/local/nvidia/lib/libcuda.so.361.42 \
+            -V /usr/lib64/libcuda.so:/usr/local/nvidia/lib64/libcuda.so \
+            -V /usr/lib64/libcuda.so.1:/usr/local/nvidia/lib64/libcuda.so.1 \
+            -V /usr/lib64/libcuda.so.361.42:/usr/local/nvidia/lib64/libcuda.so.361.42 \
+            -- python /mnist/mnist_replica.py \
+            --train_step 1000 \
+            --ps_hosts {ps_hosts} --worker_hosts {worker_hosts} \
+            --job_name {job_name} --worker_index {task_index}
+
+
+
+sudo nvidia-docker run -e MESOS_MASTER=master.mesos:5050 \
+            --net=host \
+            -e DOCKER_IMAGE=tfmesos/tfmesos:v1 \
+            -v /home/ec2-user/tfmesos/examples/mnist:/mnist \
+            -v /etc/passwd:/etc/passwd:ro \
+            -v /etc/group:/etc/group:ro \
+            -u `id -u` \
+            -w /mnist \
+            tfmesos/tfmesos:v1 \
+            tfrun -w 4 -s 2 -Gw 1 -v\
+            -V /dev:/dev \
+            -V /home/ec2-user/tfmesos/examples/mnist:/mnist \
+            -V /usr/lib/libcuda.so:/usr/local/nvidia/lib/libcuda.so \
+            -V /usr/lib/libcuda.so.1:/usr/local/nvidia/lib/libcuda.so.1 \
+            -V /usr/lib/libcuda.so.361.42:/usr/local/nvidia/lib/libcuda.so.361.42 \
+            -V /usr/lib64/libcuda.so:/usr/local/nvidia/lib64/libcuda.so \
+            -V /usr/lib64/libcuda.so.1:/usr/local/nvidia/lib64/libcuda.so.1 \
+            -V /usr/lib64/libcuda.so.361.42:/usr/local/nvidia/lib64/libcuda.so.361.42 \
+            -- python /mnist/mnist_replica.py \
+            --train_step 1000 \
+            --ps_hosts {ps_hosts} --worker_hosts {worker_hosts} \
+            --job_name {job_name} --worker_index {task_index}
+
+
+
+
+
+docker run --rm -it -e MESOS_MASTER=master.mesos:5050 \
+            --net=host \
+            -v /home/ec2-user/tfmesos/examples/mnist:/mnist \
+            -v /etc/passwd:/etc/passwd:ro \
+            -v /etc/group:/etc/group:ro \
+            -u `id -u` \
+            -w /mnist \
+            tfmesos/tfmesos:gpu \
+            python mnist.py -w 2 -s 2
+
+
+
+nvidia-docker run --rm -it -e MESOS_MASTER=master.mesos:5050 \
+             --net=host \
+             -v /home/ec2-user/tfmesos/examples/mnist:/mnist \
+             -v /etc/passwd:/etc/passwd:ro \
+             -v /etc/group:/etc/group:ro \
+             -u `id -u` \
+             -w /mnist \
+             tfmesos/tfmesos:v1 \
+             python mnist.py -w 2 --worker-gpus 1
+
+
+Nov  2 23:13:01 ip-172-31-14-41 docker: time="2016-11-02T23:13:01.222179642-04:00" level=error msg="Handler for GET /v1.23/containers/tfmesos/tfmesos:gpu/json returned error: No such container: tfmesos/tfmesos:gpu"
+Nov  2 23:13:02 ip-172-31-14-41 minuteman-env: 23:13:02.532 [error] Failed to parse task: {function_clause,[{mesos_state_client,docker,[#{image => <<"tfmesos/tfmesos:gpu">>,network => <<"HOST">>,privileged => false}],[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,304}]},{mesos_state_client,container,1,[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,295}]},{mesos_state_client,task,3,[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,232}]},{mesos_state_client,tasks,5,[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,211}]},{mesos_state_client,executors,5,[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,191}]},{mesos_state_client,frameworks,4,[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,181}]},{mesos_state_client,tasks,1,[{file,"/pkg/src/minuteman/_build/default/lib/mesos_state/src/mesos_state_client.erl"},{line,169}]},{minuteman_mesos_poller,collect_vips,2,[{file,"/pkg/src/minuteman/_build/prod/lib/minuteman/src/minuteman_mesos_poller.erl"},{line,323}]}]}
+
+
+
+
+apt-get update && apt-get install -y --no-install-recommends \
+               cuda-samples-$CUDA_PKG_VERSION && \
+               rm -rf /var/lib/apt/lists/*
+
+cd /usr/local/cuda/samples/0_Simple/matrixMul
+make
+./matrixMul
+```
+[Matrix Multiply Using CUDA] - Starting...
+cudaGetDevice returned error CUDA driver version is insufficient for CUDA runtime version (code 35), line(396)
+cudaGetDeviceProperties returned error CUDA driver version is insufficient for CUDA runtime version (code 35), line(409)
+MatrixA(320,320), MatrixB(640,320)
+cudaMalloc d_A returned error CUDA driver version is insufficient for CUDA runtime version (code 35), line(164)
+```
