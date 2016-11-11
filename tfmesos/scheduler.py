@@ -113,17 +113,17 @@ class Task(object):
                 gpus = Dict()
                 resources.append(gpus)
                 gpus.name = 'gpus'
+                hostname = offer.hostname
 
                 if gpu_resource_type == 'SET':
                     gpus.type = 'SET'
                     gpus.set.item = gpu_uuids
+                    url = 'http://%s:3476/docker/cli?dev=%s' % (
+                        hostname, urllib.parse.quote(' '.join(gpu_uuids)))
                 else:
                     gpus.type = 'SCALAR'
                     gpus.scalar.value = len(gpu_uuids)
-
-                hostname = offer.hostname
-                url = 'http://%s:3476/docker/cli?dev=%s' % (
-                    hostname, urllib.parse.quote(' '.join(gpu_uuids)))
+                    url = 'http://%s:3476/docker/cli?dev=0' % (hostname)
                 try:
                     ti.container.docker.parameters = parameters = []
                     docker_args = urllib.request.urlopen(url).read()

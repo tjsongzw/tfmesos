@@ -9,10 +9,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-w', '--nworker', type=int, default=1)
 parser.add_argument('-s', '--nserver', type=int, default=1)
 parser.add_argument('-Gw', '--worker-gpus', type=int, default=0)
+parser.add_argument('--step', type=int, default=10000)
 args, cmd = parser.parse_known_args()
 master = cmd[0] if cmd else None
 nworker = args.nworker
 nserver = args.nserver
+max_step = args.step
 
 jobs_def = [
     {
@@ -38,14 +40,16 @@ with cluster(jobs_def, master=master, quiet=False) as targets:
             x = tf.placeholder(tf.float32, [None, 784])
             y = tf.nn.softmax(tf.matmul(x, W) + b)
             y_ = tf.placeholder(tf.float32, [None, 10])
-            cross_entropy = -tf.reduce_sum(y_*tf.log(y))
+            cross_entropy = -tf.reduce_sum(y_ * tf.log(y))
 
             steps = []
             for i in range(nworker):
                 with tf.device('/job:worker/task:%d' % i):
-                    steps.append(tf.train.GradientDescentOptimizer(0.005).minimize(cross_entropy, global_step=global_step))
+                    steps.append(
+                        tf.train.GradientDescentOptimizer(0.005).minimize(
+                            cross_entropy, global_step=global_step))
 
-            correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
+            correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
             init_op = tf.initialize_all_variables()
@@ -56,18 +60,27 @@ with cluster(jobs_def, master=master, quiet=False) as targets:
             with graph.as_default():
                 with tf.Session(targets['/job:worker/task:%d' % i]) as sess:
                     step = 0
-                    while not coord.should_stop() and step < 10000:
+                    while not coord.should_stop() and step < max_step:
                         with _lock:
                             batch_xs, batch_ys = mnist.train.next_batch(100)
 
-                        _, step = sess.run([steps[i], global_step], feed_dict={x: batch_xs, y_: batch_ys})
+                        _, step = sess.run(
+                            [steps[i], global_step],
+                            feed_dict={x: batch_xs,
+                                       y_: batch_ys})
                     coord.request_stop()
 
         with tf.Session(targets['/job:worker/task:0']) as sess:
             sess.run(init_op)
-            threads = [Thread(target=train, args=(i,)) for i in range(nworker)]
+            threads = [
+                Thread(
+                    target=train, args=(i, )) for i in range(nworker)
+            ]
             for t in threads:
                 t.start()
 
             coord.join(threads)
-            print(sess.run(accuracy, feed_dict={x: mnist.test.images, y_: mnist.test.labels}))
+            print(sess.run(
+                accuracy,
+                feed_dict={x: mnist.test.images,
+                           y_: mnist.test.labels}))
