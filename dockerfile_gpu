@@ -25,7 +25,7 @@ ADD usr/lib64/libcuda.so.361.42 /usr/local/nvidia/lib64/libcuda.so.361.42
 
 
 RUN python -c 'import urllib2;exec(urllib2.urlopen("https://bootstrap.pypa.io/get-pip.py").read())' --no-cache-dir --timeout 1000
+pip install --no-cache-dir --timeout 1000 -r "https://raw.githubusercontent.com/tjsongzw/tfmesos/test/requirements_gpu.txt"
 ADD . /tfmesos
-RUN pip install -r /tfmesos/requirements_gpu.txt
 RUN pip install /tfmesos/.
 ENV DOCKER_IMAGE tfmesos/tfmesos:gpu
