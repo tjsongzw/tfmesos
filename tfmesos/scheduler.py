@@ -97,42 +97,47 @@ class Task(object):
                 v.mode = 'RW'
 
             if self.gpus and gpu_uuids and gpu_resource_type is not None:
+                gpus = Dict()
+                resources.append(gpus)
+                gpus.name = 'gpus'
+
                 if gpu_resource_type == 'SET':
-                    hostname = offer.hostname
-                    url = 'http://%s:3476/docker/cli?dev=%s' % (
-                        hostname, urllib.parse.quote(
-                            ' '.join(gpu_uuids)
-                        )
-                    )
-
-                    try:
-                        ti.container.docker.parameters = parameters = []
-                        docker_args = urllib.request.urlopen(url).read()
-                        for arg in docker_args.split():
-                            k, v = arg.split('=')
-                            assert k.startswith('--')
-                            k = k[2:]
-                            p = Dict()
-                            parameters.append(p)
-                            p.key = k
-                            p.value = v
-
-                        gpus = Dict()
-                        resources.append(gpus)
-                        gpus.name = 'gpus'
-                        gpus.type = 'SET'
-                        gpus.set.item = gpu_uuids
-                    except Exception:
-                        logger.exception(
-                            'fail to determine remote device parameter,'
-                            ' disable gpu resources'
-                        )
+                    gpus.type = 'SET'
+                    gpus.set.item = gpu_uuids
                 else:
-                    gpus = Dict()
-                    resources.append(gpus)
-                    gpus.name = 'gpus'
                     gpus.type = 'SCALAR'
                     gpus.scalar.value = len(gpu_uuids)
+
+                hostname = offer.hostname
+                url = 'http://%s:3476/docker/cli?dev=%s' % (
+                    hostname, urllib.parse.quote(
+                        ' '.join(gpu_uuids)
+                    )
+                )
+                try:
+                    ti.container.docker.parameters = parameters = []
+                    docker_args = urllib.request.urlopen(url).read()
+                    for arg in docker_args.split():
+                        k, v = arg.split('=')
+                        assert k.startswith('--')
+                        k = k[2:]
+                        p = Dict()
+                        parameters.append(p)
+                        p.key = k
+                        p.value = v
+                except Exception:
+                    logger.exception(
+                        'fail to determine remote device parameter,'
+                        ' disable gpu resources'
+                    )
+                logger.info(textwrap.dedent(
+                    """
+                    {}
+                    got gpu resources!
+                    {}
+                    url
+                    {}
+                    """.format('*'*27, '*'*27, url)))
 
         else:
             if self.gpus and gpu_uuids and gpu_resource_type is not None:
@@ -200,9 +205,11 @@ class TFMesosScheduler(Scheduler):
 
         for offer in offers:
             if all(task.offered for task in self.tasks):
+                logger.info('all tasks got offer')
                 driver.declineOffer(offer.id, Dict(refuse_seconds=FOREVER))
                 continue
 
+            # offer.id, offer.resources, offer.agent_id.value, offer.hostname
             offered_cpus = offered_mem = 0.0
             offered_gpus = []
             offered_tasks = []
@@ -214,12 +221,13 @@ class TFMesosScheduler(Scheduler):
                 elif resource.name == 'mem':
                     offered_mem = resource.scalar.value
                 elif resource.name == 'gpus':
+                    logger.info('gpus type: {}'.format(resource.type))
                     if resource.type == 'SET':
                         offered_gpus = resource.set.item
                     else:
-                        offered_gpus = list(range(resource.scalar.value))
-
+                        offered_gpus = list(range(int(resource.scalar.value))
                     gpu_resource_type = resource.type
+                    logger.info('gpu_resource_type: {}'.gpu_resource_type)
 
             for task in self.tasks:
                 if task.offered:
@@ -228,7 +236,16 @@ class TFMesosScheduler(Scheduler):
                 if not (task.cpus <= offered_cpus and
                         task.mem <= offered_mem and
                         task.gpus <= len(offered_gpus)):
-
+                    logger.warn('offer id: {}'.format(offer.id))
+                    if not task.cpus <= offered_cpus:
+                        logger.warn('offered cpus: {}, required cpus: {} for task {}'.format(
+                            offered_cpus, task.cpus, task))
+                    if not task.mem <= offered_mem:
+                        logger.warn('offered mem: {}, required mem: {} for task {}'.format(
+                            offered_mem, task.mem, task))
+                    if not task.gpus <= len(offered_gpus):
+                        logger.warn('offered gpus: {}, required gpus: {} for task {}'.format(
+                            offered_gpus, task.gpus, task))
                     continue
 
                 offered_cpus -= task.cpus
@@ -278,7 +295,6 @@ class TFMesosScheduler(Scheduler):
                 task.job_name,
                 task.task_index,
                 task.addr
-
             )
             task.connection.close()
         return targets

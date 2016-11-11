@@ -48,6 +48,7 @@ def main(argv):
         server_def.default_session_config.device_count["GPU"] = int(gpus)
 
         (soft, hard) = resource.getrlimit(resource.RLIMIT_AS)
+        print 'mem: {}, soft: {}, hard: {}'.format(mem, soft, hard)
         soft = min(float(mem), soft, hard)
         resource.setrlimit(resource.RLIMIT_AS, (soft, hard))
 

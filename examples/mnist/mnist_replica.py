@@ -32,7 +32,6 @@ perform forward computation and gradient calculation in parallel, which
 should lead to increased training speed for the simple model.
 """
 
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -93,7 +92,7 @@ def main(unused_argv):
   if FLAGS.job_name == "ps":
     server.join()
     sys.exit(0)
-    
+
   mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
   if FLAGS.download_only:
     sys.exit(0)
@@ -169,8 +168,8 @@ def main(unused_argv):
                              recovery_wait_secs=1,
                              global_step=global_step)
 
+    # allow_soft_placement=True,
     sess_config = tf.ConfigProto(
-        allow_soft_placement=True,
         log_device_placement=True,
         device_filters=["/job:ps", "/job:worker/task:%d" % FLAGS.worker_index])
 
