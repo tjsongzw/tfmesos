@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     apt-get clean
 RUN apt-get install nvidia-modprobe
 RUN python -c 'import urllib2;exec(urllib2.urlopen("https://bootstrap.pypa.io/get-pip.py").read())' --no-cache-dir --timeout 1000
-pip install --no-cache-dir --timeout 1000 -r "https://raw.githubusercontent.com/tjsongzw/tfmesos/test/requirements_cpu.txt"
+RUN pip install --no-cache-dir --timeout 1000 -r "https://raw.githubusercontent.com/tjsongzw/tfmesos/test/requirements_cpu.txt"
 ADD . /tfmesos
 RUN pip install /tfmesos/.
 ENV DOCKER_IMAGE tfmesos/tfmesos:cpu
